@@ -1,42 +1,117 @@
 import re
 import sys
 import networkx as nx
+import product
+import numpy as np
+import matplotlib.pyplot as plt
+import math
 from PIL import Image, ImageDraw
 
-filename = sys.argv[1]
-G = nx.read_gml(filename)
-pr = nx.pagerank(G)
+gml = ('adjnoun.gml',
+'celegansneural.gml',
+'football.gml',
+'dolphins.gml',
+'hep-th.gml',
+'karate.gml',
+'lesmis.gml',
+'netscience.gml',
+'polblogs.gml',
+'polbooks.gml',
+'power.gml')
+
+#for filename in gml:
+
+#G = nx.read_gml(filename)
+
+#filename = "CA-GrQc.txt"
+#G = nx.read_edgelist(filename,create_using=nx.DiGraph())
+
+#k = 11
+#P = [[.902,.253],[.221,.582]]
+#G = product.kronecker_random_graph(k,P)
+#for u,v in G.selfloop_edges():
+#  G.remove_edge(u,v)
+
+#G = nx.read_edgelist("C:\\Users\\tweninge\\Downloads\\CA-HepTh.txt")
+#G = nx.barabasi_albert_graph(1000, 1)
+#G = nx.powerlaw_cluster_graph(1000,1,.4)
+#G = nx.random_regular_graph(10, 1000)
+#G = nx.scale_free_graph(1000)
+#G = nx.erdos_renyi_graph(1000,.05)
+#G = nx.watts_strogatz_graph(1000, 5, .25)
+G = nx.newman_watts_strogatz_graph(1000, 3, .25)
+
+G = nx.Graph(G)
+
+pr = nx.pagerank(G, max_iter=55)
+
+import community
+
+dendo = community.generate_dendrogram(G, None)
+com = community.partition_at_level(dendo, len(dendo)-1 )
+
+G = nx.DiGraph(G)
+
+#gm = nx.google_matrix(G)
 maxPR = max(pr.values())
 
-size = 1000
-rectWidth = 10
+f, (ax1, ax2, ax3) = plt.subplots(1,3)
 
-im = Image.new("RGB", (size, size), "white")
-draw = ImageDraw.Draw(im)
+#plt.imshow(gm,
+#           interpolation='nearest', origin='lower')
+#plt.show()
 
+
+x = np.zeros(G.number_of_edges())
+y = np.zeros(G.number_of_edges())
+z = np.zeros(G.number_of_edges())
+
+i=0
 for edge in G.edges():
-  x = (1 - (pr[edge[0]] / maxPR)) * (size - rectWidth - rectWidth) + rectWidth
-  y = (1 - (pr[edge[1]] / maxPR)) * (size - rectWidth - rectWidth) + rectWidth
-  draw.rectangle([x, y, x + rectWidth, y + rectWidth], fill='black')
-  draw.rectangle([y, x, y + rectWidth, x + rectWidth], fill='black')
-im.save('/var/www/html/graphlab-doc/' + filename + '.png')
+  x[i] = (1 - (pr[edge[0]] / maxPR))
+  y[i] = (1 - (pr[edge[1]] / maxPR))
+  if com[edge[0]] == com[edge[1]]:
+    z[i] = 1
+  else:
+    z[i] = 0
+  #z[i] = (1 - (pr[edge[1]] / maxPR)) + (1 - (pr[edge[0]] / maxPR))
+  i=i+1
 
-nodes = G.nodes()
-random.shuffle(nodes)
-order = sorted(nodes, key = lambda node: pr[node], reverse = True)
-flipped = [0] * len(order)
-for index in range(len(order)):
-  flipped[order[index]] = index
 
-size = len(order)
-im = Image.new("RGB", (size,size), "white")
-im2 = Image.new("RGB", (size,size), "white")
-draw = ImageDraw.Draw(im)
-draw2 = ImageDraw.Draw(im2)
-for edge in G.edges():
-  draw.point((flipped[edge[0]], flipped[edge[1]]), fill="black")
-  draw.point((flipped[edge[1]], flipped[edge[0]]), fill="black")
-  draw2.point((edge[0], edge[1]), fill="black")
-  draw2.point((edge[1], edge[0]), fill="black")
-im.save('/var/www/html/graphlab-doc/' + filename + '.adj.png')
-im2.save('/var/www/html/graphlab-doc/' + filename + '.kron.png')
+ax1.scatter(x,y, c=z, s=z*20, alpha=0.2, cmap='seismic', vmin=z.min(), vmax=z.max(), linewidths=0)
+
+## order by PR
+
+x = np.zeros(G.number_of_edges())
+y = np.zeros(G.number_of_edges())
+z = np.zeros(G.number_of_edges())
+
+ordered = dict(zip( range(0,G.number_of_nodes()), sorted(G.nodes(), key = lambda node: pr[node], reverse = True) ))
+flip =    dict(zip( sorted(G.nodes(), key = lambda node: pr[node], reverse = True), range(0,G.number_of_nodes()) ))
+
+i=0
+for o in ordered.keys():
+  for e in G.out_edges(ordered[o]):
+    x[i] = o
+    y[i] = flip[e[1]]
+    z[i] = com[e[0]]
+    i=i+1
+
+ax2.scatter(x,y, c=z, s=20, alpha=0.5, vmin=z.min(), vmax=z.max(), linewidths=0)
+
+x = np.zeros(G.number_of_edges())
+y = np.zeros(G.number_of_edges())
+z = np.zeros(G.number_of_edges())
+
+i=0
+for o in ordered.keys():
+  for e in G.out_edges(ordered[o]):
+    x[i] = o
+    y[i] = flip[e[1]]
+    if com[ordered[o]] == com[e[1]]:
+      z[i] = 1
+    i=i+1
+
+ax3.scatter(x,y, c=z, s=20, alpha=0.5, vmin=z.min(), vmax=z.max(), linewidths=0)
+
+plt.show()
