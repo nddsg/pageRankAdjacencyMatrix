@@ -39,13 +39,13 @@ gml = ('adjnoun.gml',
 #G = nx.scale_free_graph(1000)
 #G = nx.erdos_renyi_graph(1000,.05)
 #G = nx.watts_strogatz_graph(1000, 5, .25)
-G = nx.newman_watts_strogatz_graph(1000, 3, .25)
+#G = nx.newman_watts_strogatz_graph(1000, 3, .25)
 
-#G = nx.watts_strogatz_graph(16, 4, 0)
-#G.add_edge(0, int(G.number_of_nodes() / 2))
+G = nx.watts_strogatz_graph(16, 4, 0)
+G.add_edge(0, int(G.number_of_nodes() / 2))
 
-pr = nx.pagerank(G, max_iter=55)
-#pr = nx.pagerank(G, max_iter=255, tol=1e-16)
+#pr = nx.pagerank(G, max_iter=55)
+pr = nx.pagerank(G, max_iter=255, tol=1e-16)
 
 import community
 
@@ -71,10 +71,7 @@ i=0
 for edge in G.edges():
   x[i] = (1 - (pr[edge[0]] / maxPR))
   y[i] = (1 - (pr[edge[1]] / maxPR))
-  if com[edge[0]] == com[edge[1]]:
-    z[i] = 1
-  else:
-    z[i] = 0
+  z[i] = 1
   #z[i] = (1 - (pr[edge[1]] / maxPR)) + (1 - (pr[edge[0]] / maxPR))
   i=i+1
 
