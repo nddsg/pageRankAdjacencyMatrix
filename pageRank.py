@@ -39,18 +39,19 @@ gml = ('adjnoun.gml',
 #G = nx.scale_free_graph(1000)
 #G = nx.erdos_renyi_graph(1000,.05)
 #G = nx.watts_strogatz_graph(1000, 5, .25)
-G = nx.newman_watts_strogatz_graph(1000, 3, .25)
+#G = nx.newman_watts_strogatz_graph(1000, 3, .25)
 
-G = nx.Graph(G)
+G = nx.watts_strogatz_graph(16, 4, 0)
+G.add_edge(0, int(G.number_of_nodes() / 2))
 
-pr = nx.pagerank(G, max_iter=55)
+#pr = nx.pagerank(G, max_iter=55)
+pr = nx.pagerank(G, max_iter=255, tol=1e-16)
 
 import community
 
 dendo = community.generate_dendrogram(G, None)
 com = community.partition_at_level(dendo, len(dendo)-1 )
 
-G = nx.DiGraph(G)
 
 #gm = nx.google_matrix(G)
 maxPR = max(pr.values())
@@ -70,10 +71,7 @@ i=0
 for edge in G.edges():
   x[i] = (1 - (pr[edge[0]] / maxPR))
   y[i] = (1 - (pr[edge[1]] / maxPR))
-  if com[edge[0]] == com[edge[1]]:
-    z[i] = 1
-  else:
-    z[i] = 0
+  z[i] = 1
   #z[i] = (1 - (pr[edge[1]] / maxPR)) + (1 - (pr[edge[0]] / maxPR))
   i=i+1
 
@@ -82,16 +80,16 @@ ax1.scatter(x,y, c=z, s=z*20, alpha=0.2, cmap='seismic', vmin=z.min(), vmax=z.ma
 
 ## order by PR
 
-x = np.zeros(G.number_of_edges())
-y = np.zeros(G.number_of_edges())
-z = np.zeros(G.number_of_edges())
+x = np.zeros(G.number_of_edges() * 2)
+y = np.zeros(G.number_of_edges() * 2)
+z = np.zeros(G.number_of_edges() * 2)
 
 ordered = dict(zip( range(0,G.number_of_nodes()), sorted(G.nodes(), key = lambda node: pr[node], reverse = True) ))
 flip =    dict(zip( sorted(G.nodes(), key = lambda node: pr[node], reverse = True), range(0,G.number_of_nodes()) ))
 
 i=0
 for o in ordered.keys():
-  for e in G.out_edges(ordered[o]):
+  for e in G.edges(ordered[o]):
     x[i] = o
     y[i] = flip[e[1]]
     z[i] = com[e[0]]
@@ -99,13 +97,13 @@ for o in ordered.keys():
 
 ax2.scatter(x,y, c=z, s=20, alpha=0.5, vmin=z.min(), vmax=z.max(), linewidths=0)
 
-x = np.zeros(G.number_of_edges())
-y = np.zeros(G.number_of_edges())
-z = np.zeros(G.number_of_edges())
+x = np.zeros(G.number_of_edges() * 2)
+y = np.zeros(G.number_of_edges() * 2)
+z = np.zeros(G.number_of_edges() * 2)
 
 i=0
 for o in ordered.keys():
-  for e in G.out_edges(ordered[o]):
+  for e in G.edges(ordered[o]):
     x[i] = o
     y[i] = flip[e[1]]
     if com[ordered[o]] == com[e[1]]:
