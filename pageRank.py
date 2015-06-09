@@ -36,17 +36,20 @@ gml = ('adjnoun.gml',
 #G = nx.barabasi_albert_graph(1000, 1)
 #G = nx.powerlaw_cluster_graph(1000,1,.4)
 #G = nx.random_regular_graph(10, 1000)
-#G = nx.scale_free_graph(1000)
+
+#G = nx.Graph()
+#G.add_edges_from(nx.scale_free_graph(1000).edges())
+
 #G = nx.erdos_renyi_graph(1000,.05)
 #G = nx.watts_strogatz_graph(1000, 5, .25)
 #G = nx.newman_watts_strogatz_graph(1000, 3, .25)
 
-G = nx.watts_strogatz_graph(16, 4, 0)
+G = nx.watts_strogatz_graph(20, 4, 0)
 G.add_edge(0, int(G.number_of_nodes() / 2))
 
 #pr = nx.pagerank(G, max_iter=55)
 pr = nx.pagerank(G, max_iter=255, tol=1e-16)
-
+#pr = nx.eigenvector_centrality(G, max_iter=500, tol=.01)
 import community
 
 dendo = community.generate_dendrogram(G, None)
@@ -63,17 +66,20 @@ f, (ax1, ax2, ax3) = plt.subplots(1,3)
 #plt.show()
 
 
-x = np.zeros(G.number_of_edges())
-y = np.zeros(G.number_of_edges())
-z = np.zeros(G.number_of_edges())
+x = np.zeros(G.number_of_edges() * 2)
+y = np.zeros(G.number_of_edges() * 2)
+z = np.zeros(G.number_of_edges() * 2)
 
 i=0
 for edge in G.edges():
   x[i] = (1 - (pr[edge[0]] / maxPR))
   y[i] = (1 - (pr[edge[1]] / maxPR))
   z[i] = 1
+  y[i + 1] = (1 - (pr[edge[0]] / maxPR))
+  x[i + 1] = (1 - (pr[edge[1]] / maxPR))
+  z[i + 1] = 1
   #z[i] = (1 - (pr[edge[1]] / maxPR)) + (1 - (pr[edge[0]] / maxPR))
-  i=i+1
+  i=i+2
 
 
 ax1.scatter(x,y, c=z, s=z*20, alpha=0.2, cmap='seismic', vmin=z.min(), vmax=z.max(), linewidths=0)
